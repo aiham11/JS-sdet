@@ -1,0 +1,103 @@
+Certainly! Below is a document detailing the test case for determining the required Java version and implementation for migrating from Jira to Rally, using Java JDK 21, Eclipse 2.4, Rest Assured library, and Rally API client library.
+
+---
+
+### Test Case Document
+
+#### Title: Determine Java Version and Implementation Required for Jira to Rally Migration
+
+#### Objective:
+To verify that the migration from Jira to Rally can be performed using Java JDK 21, Eclipse 2.4, Rest Assured library for API testing, and Rally API client library.
+
+#### Pre-requisites:
+1. Java JDK 21 installed on the test environment.
+2. Eclipse IDE version 2.4 installed.
+3. Rest Assured library added to the project dependencies.
+4. Rally API client library added to the project dependencies.
+5. Access to both Jira and Rally API endpoints with necessary credentials.
+
+#### Test Environment:
+- **Java Version**: Java JDK 21
+- **IDE**: Eclipse 2.4
+- **Libraries**: Rest Assured, Rally API Client
+
+#### Steps:
+
+1. **Setup Development Environment**:
+    - Install Java JDK 21.
+    - Install Eclipse IDE version 2.4.
+    - Create a new Java project in Eclipse.
+    - Add Rest Assured library and Rally API client library to the project dependencies.
+
+2. **Verify Java Version and IDE Setup**:
+    - Open Eclipse and check the installed JDK version:
+      ```java
+      public class CheckJavaVersion {
+          public static void main(String[] args) {
+              System.out.println("Java Version: " + System.getProperty("java.version"));
+          }
+      }
+      ```
+    - Run the above program to ensure Java JDK 21 is being used.
+
+3. **Setup API Testing Framework**:
+    - Add Rest Assured library to the project.
+    - Create a sample test to verify the setup:
+      ```java
+      import io.restassured.RestAssured;
+      import io.restassured.response.Response;
+      import static io.restassured.RestAssured.*;
+
+      public class ApiTest {
+          public static void main(String[] args) {
+              RestAssured.baseURI = "https://your-jira-instance.atlassian.net";
+              Response response = given()
+                      .auth().basic("username", "password")
+                      .get("/rest/api/2/issue/KEY-123");
+              System.out.println("Response Code: " + response.getStatusCode());
+          }
+      }
+      ```
+    - Verify the response to ensure Rest Assured is functioning correctly.
+
+4. **Implement Rally API Client**:
+    - Add Rally API client library to the project.
+    - Create a sample program to connect to Rally and retrieve data:
+      ```java
+      import com.rallydev.rest.RallyRestApi;
+      import com.rallydev.rest.request.GetRequest;
+      import com.rallydev.rest.response.GetResponse;
+
+      public class RallyApiTest {
+          public static void main(String[] args) {
+              String rallyApiUrl = "https://rally1.rallydev.com";
+              String apiKey = "YOUR_RALLY_API_KEY";
+
+              RallyRestApi restApi = new RallyRestApi(new URI(rallyApiUrl), apiKey);
+
+              GetRequest getRequest = new GetRequest("/v2.0/project");
+              GetResponse getResponse = restApi.get(getRequest);
+              System.out.println("Response Code: " + getResponse.getStatusCode());
+          }
+      }
+      ```
+    - Verify the response to ensure Rally API client is functioning correctly.
+
+5. **Perform Migration Test**:
+    - Write a script to extract data from Jira using Rest Assured.
+    - Write a script to migrate the extracted data to Rally using Rally API client.
+    - Validate the data migration by comparing data in both systems.
+
+#### Expected Results:
+1. Java JDK 21 and Eclipse 2.4 should be correctly set up and verified.
+2. Rest Assured library should be able to make API calls to Jira and retrieve responses successfully.
+3. Rally API client library should be able to connect to Rally and retrieve responses successfully.
+4. Data migration script should successfully extract data from Jira and insert it into Rally without errors.
+
+#### Post-conditions:
+- Clean up any test data created in both Jira and Rally.
+- Document any issues encountered and their resolutions.
+
+---
+
+This document outlines the steps and validations required to ensure the correct Java version and implementation for the migration from Jira to Rally. Adjust the scripts and configurations as needed based on your specific setup and requirements.
