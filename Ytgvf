@@ -1,79 +1,106 @@
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.rallydev.rest.RallyRestApi;
-import com.rallydev.rest.request.CreateRequest;
-import com.rallydev.rest.response.CreateResponse;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import io.restassured.path.json.JsonPath;
+import io.restassured.response.ValidatableResponse;
+import io.restassured.specification.RequestSpecification;
+import io.restassured.response.Response;
+import static  io.restassured.RestAssured.*;
+import com.google.gson.Gson;
 
-import java.io.FileReader;
-import java.net.URI;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Base64;
+import com.google.gson.GsonBuilder;
+public class JiraTestCaseInfo {
 
-public class RallyCreateTC {
-    public static void main(String[] args) throws Exception {
-        // Read JSON file
-        JsonObject jsonData = readJsonFromFile("CC2-T56142.json");
+	public static void main(String[] args) throws IOException {
+		
+		
+		String TestCase= "CC2-T56142";
+		RestAssured.baseURI="https://jira.healthcareit.net/";
+		
+		  //Send the get Request
+		   Response response1= given().log().all()
+				   
+				    .header("Authorization","Bearer "+"NjYwNzM3MzEyMzczOqpitrVg77VQlPFPBwSZ+cMq37S5")
+	        	    .header("Accept","application/json")
+	        		.when()
+	        		.get("/rest/atm/1.0/testcase/"+TestCase);
+		   
+	        		response1.then().assertThat().statusCode(200).extract().response();
+	        		
+	        		
+	        		 System.out.println(response1 + response1.body().asString());
+	        	        System.out.println("Pretty Response : " + response1.prettyPrint().toString());
+	        	        
 
-        // Replace with your Rally URL, API Key, and Project Reference
-        String rallyURL = "https://rally1.rallydev.com";
-        String apiKey = "_Uwk01XQOyRPk2ctMLiR9PAM1nBE6spnDEmSj1pk"; // replace with your API Key
-        String projectRef = "789325818991"; // replace with your project reference
+	        			//save the JSON response to a file
+	        		        FileWriter file = null;
+	        				try {
+	        					file = new FileWriter(TestCase+".json"); //saves to this location : C:\Users\aalchala\eclipse-workspace\JIRA Demo
+	        					
+	        					
+	        				} catch (IOException e) {
+	        					
+	        					e.printStackTrace();
+	        				}
+	        		        file.write(response1.prettyPrint());
+	        		        file.flush();
+	        		        file.close();
+	        			
+	        		//-------------------------------------------------------------------------------------------------------	
+	        			
+	        	        
+	        	        
+	        	        
+	}
 
-        // Initialize Rally API
-        RallyRestApi restApi = new RallyRestApi(new URI(rallyURL), apiKey);
-        restApi.setApplicationName("CreateTestCaseApp");
-
-        // Extract values from JSON
-        JsonObject testCaseData = jsonData.getAsJsonObject("testCase");
-
-        // Create a new test case
-        JsonObject newTestCase = new JsonObject();
-        newTestCase.addProperty("Name", testCaseData.get("Name").getAsString());
-        newTestCase.addProperty("Project", projectRef);
-        newTestCase.addProperty("Method", testCaseData.get("Method").getAsString());
-        newTestCase.addProperty("Priority", testCaseData.get("Priority").getAsString());
-        newTestCase.addProperty("Objective", testCaseData.get("Objective").getAsString());
-        newTestCase.addProperty("Owner", testCaseData.get("Owner").getAsString());
-
-        // Add Tags to the test case
-        JsonArray tagsArray = testCaseData.getAsJsonArray("Tags");
-        if (tagsArray != null) {
-            JsonArray newTagsArray = new JsonArray();
-            for (JsonElement tagElement : tagsArray) {
-                JsonObject tagObject = tagElement.getAsJsonObject();
-                String tagRef = tagObject.get("_ref").getAsString();
-                JsonObject newTagObject = new JsonObject();
-                newTagObject.addProperty("_ref", tagRef);
-                newTagsArray.add(newTagObject);
-            }
-            newTestCase.add("Tags", newTagsArray);
-        }
-
-        // Create the test case in Rally
-        CreateRequest createRequest = new CreateRequest("testcase", newTestCase);
-        CreateResponse createResponse = restApi.create(createRequest);
-
-        // Check if the creation was successful
-        if (createResponse.wasSuccessful()) {
-            System.out.println("Successfully created test case: " + createResponse.getObject().get("_ref").getAsString());
-        } else {
-            System.out.println("Error occurred creating test case:");
-            for (String error : createResponse.getErrors()) {
-                System.out.println(error);
-            }
-        }
-
-        // Release resources
-        restApi.close();
-    }
-
-    // Method to read JSON from a file
-    private static JsonObject readJsonFromFile(String filePath) throws Exception {
-        try (FileReader reader = new FileReader(filePath)) {
-            return JsonParser.parseReader(reader).getAsJsonObject();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 }
+
+this code is to get jira info and save the response on local machine as json file
+i wanat to change this json response before saving this file to be suitable to a file that i can use to create test cases in rally, 
+this should look like this :
+
+{
+	"projectRef": "17893258189911",
+    "testCase": {
+    "Name": "news Test Case",
+    "Method": "Manual",
+    "Priority": "Useful",
+    "Objective": "Verify functionality",
+    "Owner": "/user/775698509283",
+	"Ready": true,
+    "Tags": [
+      {
+        "_ref": "/tag/56011614555",
+        "Name": "Billing and Eligibility"
+      }
+    ]
+  
+  
+              },
+			  
+			   "TestFolder": {"_ref": "/testfolder/790320784037"
+  }
+}
+
+1-take name value from the jira response and insert it as name value for the Rally json
+2-similarly for Objective,precondition but rename the precondition key to PreConditions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
