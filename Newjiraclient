@@ -1,50 +1,55 @@
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
-import org.json.JSONObject;
 
-import java.io.FileWriter;
-import java.io.IOException;
+public class JiraProjectKeys {
 
-public class JiraClient {
+	public static void main(String[] args) throws IOException {
+		// TODO Auto-generated method stub
+		
+		//validate if Add place API is working as expected
+		
+		//given - all input detials, 
+		//when  -submit the API, 
+		//then  -validate the response
+		
 
-    private static final String JIRA_URL = "https://your-jira-instance/rest/api/2/issue/";
-    private static final String BEARER_TOKEN = "your-bearer-token";
+	
+		String Project_Key="CC2";
+		String TestCase= "CC2-T56142";
+				//setting the base URL
+		RestAssured.baseURI="https://jira.healthcareit.net/";
 
-    public static void main(String[] args) {
-        String issueKey = "TEST-1"; // Replace with your test case issue key
+		
+		//request.header("Authorization", "Basic QXBwLTE1ODAtTWZvY3VzQUxNLUE6dlhnUjlDMVQwNHNHTnlxblBFMDd4UT09");
+		
+		
+		
+		//Send the get Request
+		Response response= given().log().all().header("Authorization","Bearer "+"NjYwNzM3MzEyMzczOqpitrVg77VQlPFPBwSZ+cMq37S5")
+				
+	    .queryParam("fields", "key")
+		.queryParam("maxResults", "1000000")
+		.queryParam("query", "projectKey = \""+ Project_Key+ "\"")
+	    .header("Accept","application/json")
+		.when()
+		.get("/rest/atm/1.0/testcase/search");
+		response.then().assertThat().statusCode(200).extract().response().asString();;
+		
 
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(JIRA_URL + issueKey);
-            request.setHeader("Authorization", "Bearer " + BEARER_TOKEN);
-
-            HttpResponse response = client.execute(request);
-            HttpEntity entity = response.getEntity();
-            if (entity != null) {
-                String result = EntityUtils.toString(entity);
-                saveJsonToFile(result, "jira_response.json");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void saveJsonToFile(String jsonString, String fileName) {
-        try {
-            // Format the JSON string
-            JSONObject json = new JSONObject(jsonString);
-            String prettyJsonString = json.toString(4); // 4 is the number of spaces for indentation
-
-            try (FileWriter file = new FileWriter(fileName)) {
-                file.write(prettyJsonString);
-                System.out.println("Successfully copied JSON Object to file...");
-                System.out.println("\nJSON Object: " + prettyJsonString);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-}
+		
+		 System.out.println(response + response.body().asString());
+	        System.out.println("Pretty Response : " + response.prettyPrint().toString());
+	        
+	        
+		
+		//save the JSON response to a file
+	        FileWriter file = null;
+			try {
+				file = new FileWriter("./ProjectKey.json"); //saves to this location : C:\Users\aalchala\eclipse-workspace\JIRA Demo
+			} catch (IOException e) {
+				
+				e.printStackTrace();
+			}
+	        file.write(response.prettyPrint());
+	        file.flush();
+	        file.close();
+		
+	//-------------------------------------------------------------------------------------------------------	
