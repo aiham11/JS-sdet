@@ -1,0 +1,90 @@
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+public class ProjectKeysJiraHTTP {
+
+    private static final String JIRA_URL = "https://jira.healthcareit.net/rest/atm/1.0/testcase/search";
+    private static final String BEARER_TOKEN = "NjYwNzM3MzEyMzczOqpitrVg77VQlPFPBwSZ+cMq37S5";
+
+    public static void main(String[] args) {
+        String projectKey = "CC2";
+        String query = "projectKey = \"" + projectKey + "\"";
+        
+        
+        
+        //for folders
+        String url = JIRA_URL + "/rest/zephyr/latest/testfolder?projectKey=" + projectKey;
+
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+            String requestUrl = JIRA_URL + "?fields=key&maxResults=1000000&query=" + encodedQuery;
+
+            HttpGet request = new HttpGet(requestUrl);
+            request.setHeader("Authorization", "Bearer " + BEARER_TOKEN);
+            request.setHeader("Accept", "application/json");
+
+            HttpResponse response = client.execute(request);
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+                String result = EntityUtils.toString(entity);
+                System.out.println("Raw Response: " + result);
+
+                // Check if the response is an array or object
+                if (result.trim().startsWith("[")) {
+                    // It's an array
+                    JSONArray jsonArray = new JSONArray(result);
+                    String prettyJsonString = jsonArray.toString(4); // 4 is the number of spaces for indentation
+
+                    // Save the JSON response to a file
+                    saveJsonToFile(prettyJsonString, "./ProjectKey.json");
+                } else if (result.trim().startsWith("{")) {
+                    // It's an object
+                    JSONObject json = new JSONObject(result);
+                    String prettyJsonString = json.toString(4); // 4 is the number of spaces for indentation
+
+                    // Save the JSON response to a file
+                    saveJsonToFile(prettyJsonString, "./ProjectKey.json");
+                } else {
+                    System.err.println("Unexpected JSON format.");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    
+    //folder part 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    private static void saveJsonToFile(String jsonString, String fileName) {
+        try (FileWriter file = new FileWriter(fileName)) {
+            file.write(jsonString);
+            System.out.println("Successfully copied JSON Object to file...");
+            System.out.println("\nJSON Object: " + jsonString);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
