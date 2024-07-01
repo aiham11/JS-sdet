@@ -1,98 +1,90 @@
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.rallydev.rest.RallyRestApi;
-import com.rallydev.rest.request.CreateRequest;
-import com.rallydev.rest.response.CreateResponse;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.io.FileReader;
-import java.net.URI;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
-public class RallyCreateTC {
-    public static void main(String[] args) throws Exception {
-        // Read JSON file
-        JsonObject jsonData = readJsonFromFile("CC2-T56142.json");
+public class ProjectKeysJiraHTTP {
 
-        if (jsonData == null) {
-            System.out.println("Error reading JSON file.");
-            return;
-        }
+    private static final String JIRA_URL = "https://jira.healthcareit.net/rest/atm/1.0/testcase/search";
+    private static final String BEARER_TOKEN = "NjYwNzM3MzEyMzczOqpitrVg77VQlPFPBwSZ+cMq37S5";
 
-        // Replace with your Rally URL, API Key, and Project Reference
-        String rallyURL = "https://rally1.rallydev.com";
-        String apiKey = "_Uwk01XQOyRPk2ctMLiR9PAM1nBE6spnDEmSj1pk"; // replace with your API Key
-        String projectRef = "789325818991"; // replace with your project reference
+    public static void main(String[] args) {
+        String projectKey = "CC2";
+        String query = "projectKey = \"" + projectKey + "\"";
+        
+        
+        
+        //for folders
+        String url = JIRA_URL + "/rest/zephyr/latest/testfolder?projectKey=" + projectKey;
 
-        // Initialize Rally API
-        RallyRestApi restApi = new RallyRestApi(new URI(rallyURL), apiKey);
-        restApi.setApplicationName("CreateTestCaseApp");
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+            String requestUrl = JIRA_URL + "?fields=key&maxResults=1000000&query=" + encodedQuery;
 
-        // Extract values from JSON
-        JsonObject testCaseData = jsonData.getAsJsonObject("testCase");
+            HttpGet request = new HttpGet(requestUrl);
+            request.setHeader("Authorization", "Bearer " + BEARER_TOKEN);
+            request.setHeader("Accept", "application/json");
 
-        JsonObject testFolderData = null;
-        JsonElement testFolderElement = jsonData.get("testFolder");
-        if (testFolderElement != null && testFolderElement.isJsonObject()) {
-            testFolderData = testFolderElement.getAsJsonObject();
-        } else {
-            System.out.println("Error: TestFolder data not found in JSON.");
-            restApi.close();
-            return;
-        }
+            HttpResponse response = client.execute(request);
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+                String result = EntityUtils.toString(entity);
+                System.out.println("Raw Response: " + result);
 
-        // Create a new test case
-        JsonObject newTestCase = new JsonObject();
-        newTestCase.addProperty("Name", testCaseData.get("Name").getAsString());
-        newTestCase.addProperty("Project", projectRef);
-        newTestCase.addProperty("Method", testCaseData.get("Method").getAsString());
-        newTestCase.addProperty("Priority", testCaseData.get("Priority").getAsString());
-        newTestCase.addProperty("Objective", testCaseData.get("Objective").getAsString());
-        newTestCase.addProperty("Owner", testCaseData.get("Owner").getAsString());
+                // Check if the response is an array or object
+                if (result.trim().startsWith("[")) {
+                    // It's an array
+                    JSONArray jsonArray = new JSONArray(result);
+                    String prettyJsonString = jsonArray.toString(4); // 4 is the number of spaces for indentation
 
-        // Add Tags to the test case
-        JsonArray tagsArray = testCaseData.getAsJsonArray("Tags");
-        if (tagsArray != null) {
-            JsonArray newTagsArray = new JsonArray();
-            for (JsonElement tagElement : tagsArray) {
-                JsonObject tagObject = tagElement.getAsJsonObject();
-                String tagRef = tagObject.get("_ref").getAsString();
-                JsonObject newTagObject = new JsonObject();
-                newTagObject.addProperty("_ref", tagRef);
-                newTagsArray.add(newTagObject);
+                    // Save the JSON response to a file
+                    saveJsonToFile(prettyJsonString, "./ProjectKey.json");
+                } else if (result.trim().startsWith("{")) {
+                    // It's an object
+                    JSONObject json = new JSONObject(result);
+                    String prettyJsonString = json.toString(4); // 4 is the number of spaces for indentation
+
+                    // Save the JSON response to a file
+                    saveJsonToFile(prettyJsonString, "./ProjectKey.json");
+                } else {
+                    System.err.println("Unexpected JSON format.");
+                }
             }
-            newTestCase.add("Tags", newTagsArray);
-        }
-
-        // Add Test Folder to the test case
-        String testFolderRef = testFolderData.get("_ref").getAsString();
-        newTestCase.addProperty("TestFolder", testFolderRef);
-
-        // Create the test case in Rally
-        CreateRequest createRequest = new CreateRequest("testcase", newTestCase);
-        CreateResponse createResponse = restApi.create(createRequest);
-
-        // Check if the creation was successful
-        if (createResponse.wasSuccessful()) {
-            System.out.println("Successfully created test case: " + createResponse.getObject().get("_ref").getAsString());
-        } else {
-            System.out.println("Error occurred creating test case:");
-            for (String error : createResponse.getErrors()) {
-                System.out.println(error);
-            }
-        }
-
-        // Release resources
-        restApi.close();
-    }
-
-    // Method to read JSON from a file
-    private static JsonObject readJsonFromFile(String filePath) throws Exception {
-        try (FileReader reader = new FileReader(filePath)) {
-            return JsonParser.parseReader(reader).getAsJsonObject();
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+        }
+    }
+    
+    
+    //folder part 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    private static void saveJsonToFile(String jsonString, String fileName) {
+        try (FileWriter file = new FileWriter(fileName)) {
+            file.write(jsonString);
+            System.out.println("Successfully copied JSON Object to file...");
+            System.out.println("\nJSON Object: " + jsonString);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
