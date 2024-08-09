@@ -1,284 +1,59 @@
-To address the issues in the provided logs and ensure that your code functions as intended, I'll make the necessary adjustments to the `JiraOperation`, `RallyOperation`, and `JiraTestStep` classes, keeping the old code and comments intact while making the required changes. 
+this is and example on the jira response
 
-Here’s how I’ll approach this:
+this one here        :             "testData": "<img src=\"../rest/tests/1.0/attachment/image/500128\" style=\"width:300px\" class=\"fr-fic fr-fil fr-dib\" /><img class=\"fr-fic fr-dii\" /><img src=\"../rest/tests/1.0/attachment/image/500127\" class=\"fr-fic fr-dii\" /><img class=\"fr-fic fr-dii\" /><br />",
+is for the embedded attachments 
+            this one here :        "attachments": [
+                        {
+                            "fileName": "647cf2fe-3fca-4734-bec3-20a959a23322",
+                            "fileSize": 26843,
+                            "name": "TestStepAttachment_2.PNG",
+                            "id": 499987,
+                            "createdOn": "2024-08-05T21:35:36.294Z",
+                            "projectId": 35983,
+                            "userKey": "JIRAUSER109514"
+                        },
+                        { 
+is for the test step file attachment
 
-1. **`JiraOperation` Class**:
-   - Ensure proper handling of attachment URLs.
-   - Modify how attachments are downloaded, focusing on handling cases where the download URL is null or empty.
 
-2. **`RallyOperation` Class**:
-   - Adjust methods to ensure test steps and attachments are properly created and uploaded to Rally.
-   - Address any null reference issues and ensure that attachments for test cases and test steps are handled correctly.
 
-3. **`JiraTestStep` Class**:
-   - Ensure that embedded image URLs are correctly identified and processed.
-   - Handle any null references or issues related to missing attachments or embedded images.
 
-I will incorporate the provided code snippets with the necessary modifications while maintaining the existing structure and comments.
-
-Let's start with the `JiraOperation` class.
-
-### Adjusted `JiraOperation` Class:
-
-```java
-package com.optum.coe.automation.rally;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-public class JiraOperation {
-
-    private static final Logger logger = LogManager.getLogger();
-
-    // Method to download attachments for Jira Test Steps
-    public static List<String> downloadStepAttachments(JiraTestStep step) {
-        List<String> attachmentPaths = new ArrayList<>();
-        List<JiraAttachment> attachments = step.getAttachments();
-
-        if (attachments == null || attachments.isEmpty()) {
-            logger.warn("No attachments found for the test step.");
-            return attachmentPaths;
-        }
-
-        for (JiraAttachment attachment : attachments) {
-            String downloadUrl = attachment.getUrl();
-            if (downloadUrl == null || downloadUrl.isEmpty()) {
-                logger.warn("Download URL is null or empty for attachment: " + attachment.getId());
-                continue;
-            }
-
-            try {
-                String downloadedFilePath = Utils.downloadFileFromURL(new URL(downloadUrl), ConfigLoader.getConfigValue("TestStep_File_Attachment_Location"));
-                attachmentPaths.add(downloadedFilePath);
-            } catch (IOException e) {
-                logger.error("Failed to download attachment: " + attachment.getId(), e);
-            }
-        }
-
-        return attachmentPaths;
-    }
-}
-```
-
-### Adjusted `RallyOperation` Class:
-
-```java
-package com.optum.coe.automation.rally;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
-
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.rallydev.rest.RallyRestApi;
-import com.rallydev.rest.request.CreateRequest;
-import com.rallydev.rest.response.CreateResponse;
-
-public class RallyOperation {
-
-    private String rallyBaseURL;
-    private String rallyApiKey;
-    private String rallyProjectKey;
-    private String rallyUser;
-    private static final Logger logger = LogManager.getLogger();
-
-    public RallyOperation() {
-        rallyBaseURL = ConfigLoader.getConfigValue("RALLY_BASE_URL");
-        rallyApiKey = ConfigLoader.getConfigValue("RALLY_API_KEY");
-        rallyProjectKey = ConfigLoader.getConfigValue("RALLY_PROJECT_REF");
-        rallyUser = ConfigLoader.getConfigValue("RALLY_USER_REF");
-        logger.info("Rally values for the project key " + rallyProjectKey + " are assigned from rally_migration_config.properties file");
-        logger.log(Level.getLevel("VERBOSE"), "Below the values assigned from rally_migration_config.properties file. \nRally Base URL - " + rallyBaseURL + "\nRally Project Reference " + rallyProjectKey);
-    }
-
-    // Existing methods...
-
-    // Method to attach a file to a Rally Test Step
-    private void attachFileToRallyTestStep(RallyRestApi rallyApi, String testStepRef, String filePath) throws IOException {
-        File file = new File(filePath);
-        String base64EncodedContent = Base64.getEncoder().encodeToString(Files.readAllBytes(file.toPath()));
-
-        JsonObject attachmentContent = new JsonObject();
-        attachmentContent.addProperty("Content", base64EncodedContent);
-        CreateRequest attachmentContentRequest = new CreateRequest("AttachmentContent", attachmentContent);
-        CreateResponse attachmentContentResponse = rallyApi.create(attachmentContentRequest);
-        String attachmentContentRef = attachmentContentResponse.getObject().get("_ref").getAsString();
-
-        JsonObject attachment = new JsonObject();
-        attachment.addProperty("Artifact", testStepRef);
-        attachment.addProperty("Content", attachmentContentRef);
-        attachment.addProperty("Name", file.getName());
-        attachment.addProperty("ContentType", Files.probeContentType(file.toPath()));
-        attachment.addProperty("Size", file.length());
-
-        CreateRequest attachmentRequest = new CreateRequest("Attachment", attachment);
-        CreateResponse attachmentResponse = rallyApi.create(attachmentRequest);
-
-        if (attachmentResponse.wasSuccessful()) {
-            logger.info("Attachment created successfully for file " + filePath + ": " + attachmentResponse.getObject().get("_ref").getAsString());
-        } else {
-            logger.error("Failed to upload attachment: " + filePath);
-            for (String error : attachmentResponse.getErrors()) {
-                logger.error(error);
-            }
-        }
-    }
-
-    // Updated method to migrate test steps
-    public void migrateTestSteps(String rallyTestCaseRef, List<JiraTestStep> jiraTestSteps, RallyRestApi rallyRestApi) {
-        Collections.reverse(jiraTestSteps);
-
-        for (JiraTestStep step : jiraTestSteps) {
-            try {
-                JsonObject newTestStep = new JsonObject();
-                newTestStep.addProperty("TestCase", rallyTestCaseRef);
-                newTestStep.addProperty("StepIndex", step.getIndex());
-                newTestStep.addProperty("Input", step.getDescription());
-                newTestStep.addProperty("ExpectedResult", step.getExpectedresult());
-                newTestStep.addProperty("TestData", step.getTestdata());
-
-                CreateRequest createRequest = new CreateRequest("testcasestep", newTestStep);
-                CreateResponse createResponse = rallyRestApi.create(createRequest);
-
-                if (createResponse.wasSuccessful()) {
-                    String testStepRef = createResponse.getObject().get("_ref").getAsString();
-                    logger.info("Successfully created test step: " + step.getDescription());
-
-                    // Handle attachments
-                    List<String> attachmentPaths = JiraOperation.downloadStepAttachments(step);
-                    for (String filePath : attachmentPaths) {
-                        attachFileToRallyTestStep(rallyRestApi, testStepRef, filePath);
-                    }
-                } else {
-                    logger.error("Failed to create test step: " + step.getDescription() + ". Error: " + createResponse.getErrors());
-                }
-            } catch (Exception e) {
-                logger.error("Exception while creating test step: " + step.getDescription(), e);
-            }
-        }
-    }
-}
-```
-
-### Adjusted `JiraTestStep` Class:
-
-```java
-package com.optum.coe.automation.rally;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-public class JiraTestStep {
-
-    private static final Logger logger = LogManager.getLogger();
-    private int id;
-    private String description;
-    private String expectedResult;
-    private int index;
-    private String testData;
-    private List<JiraAttachment> attachments;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getExpectedresult() {
-        return expectedResult;
-    }
-
-    public void setExpectedresult(String expectedResult) {
-        this.expectedResult = expectedResult;
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
-    public void setIndex(int index) {
-        this.index = index;
-    }
-
-    public String getTestdata() {
-        return testData;
-    }
-
-    public void setTestdata(String testData) {
-        this.testData = testData;
-    }
-
-    public List<JiraAttachment> getAttachments() {
-        return attachments;
-    }
-
-    public void setAttachments(List<JiraAttachment> attachments) {
-        this.attachments = attachments;
-    }
-
-    // Method to extract embedded image URLs from the description
-    public List<String> getEmbeddedImageUrls() {
-        List<String> imageUrls = new ArrayList<>();
-
-        if (description != null) {
-            // Regular expression to match URLs (simplified version)
-            String urlRegex = "(https?://[^\\s]+\\.(?:jpg|jpeg|png|gif))";
-            Pattern pattern = Pattern.compile(urlRegex, Pattern.CASE_INSENSITIVE);
-            Matcher matcher = pattern.matcher(description);
-
-            while (matcher.find()) {
-                imageUrls.add(matcher.group());
-            }
-        } else {
-            logger.warn("Description is null, no embedded images found.");
-        }
-
-        return imageUrls;
-    }
-}
-```
-
-### Summary of Adjustments:
-- **Attachment Handling**: Improved
-
- handling of attachments, including null checks for download URLs and ensuring attachments are correctly uploaded.
-- **Embedded Images**: Added better handling and logging for embedded images in `JiraTestStep`.
-- **Logging Enhancements**: Ensured more detailed logging throughout the code to track any potential issues.
-
-These changes should help address the issues observed in the logs, particularly with attachment uploads and test step creation in Rally.
+"testData": "<img src=\"../rest/tests/1.0/attachment/image/500131\" style=\"width:300px\" class=\"fr-fic fr-fil fr-dib\" /><br /><img src=\"../rest/tests/1.0/attachment/image/500132\" style=\"width:300px\" class=\"fr-fic fr-fil fr-dib\" />",
+                    "attachments": [
+                        {
+                            "fileName": "f03dbd34-98dc-4107-9163-a351e33a2f4b",
+                            "fileSize": 65059,
+                            "name": "Jira_Rally_JSON_Map_CC2_Project.xlsx",
+                            "id": 499989,
+                            "createdOn": "2024-08-05T21:35:57.010Z",
+                            "projectId": 35983,
+                            "userKey": "JIRAUSER109514"
+                        },
+                        {
+                            "fileName": "5c1bb02c-ae86-4b5a-8d50-fa79d442aa5c",
+                            "fileSize": 63030,
+                            "name": "JSON_Rally_BackUp_PostMan.txt",
+                            "id": 499988,
+                            "createdOn": "2024-08-05T21:35:48.079Z",
+                            "projectId": 35983,
+                            "userKey": "JIRAUSER109514"
+                        }
+                    ],
+                    "expectedResult": "<img src=\"../rest/tests/1.0/attachment/image/500121\" style=\"width:300px\" class=\"fr-fic fr-fil fr-dib\" /><img src=\"../rest/tests/1.0/attachment/image/500119\" style=\"width:300px\" class=\"fr-fic fr-fil fr-dib\" />\"Patient Information\" column has the same data as \"Subscriber Information\" column.<br />Relationship field should have \"Self\" value",
+                    "index": 2,
+                    "description": "Validate \"Patient Information\" column has the same data as \"Subscriber Information\" column.<br />Validate: Relationship field should have \"Self\" value",
+                    "id": 3802848
+                },
+                {
+                    "testData": "<img src=\"../rest/tests/1.0/attachment/image/500128\" style=\"width:300px\" class=\"fr-fic fr-fil fr-dib\" /><img class=\"fr-fic fr-dii\" /><img src=\"../rest/tests/1.0/attachment/image/500127\" class=\"fr-fic fr-dii\" /><img class=\"fr-fic fr-dii\" /><br />",
+                    "attachments": [
+                        {
+                            "fileName": "647cf2fe-3fca-4734-bec3-20a959a23322",
+                            "fileSize": 26843,
+                            "name": "TestStepAttachment_2.PNG",
+                            "id": 499987,
+                            "createdOn": "2024-08-05T21:35:36.294Z",
+                            "projectId": 35983,
+                            "userKey": "JIRAUSER109514"
+                        },
+                        {
