@@ -25,6 +25,12 @@ To update the SSL certificate for your Java environment on your machine, follow 
    - Run:
      ```bash
      keytool -importcert -file "C:\Users\aalchala\Desktop\rallycert.cer" -alias rallyCert -keystore cacerts -storepass changeit
+C:\DEVTOOLS\REDHAT\EclipseIDEforJavaEEDevelopers_4.29\eclipse\plugins\org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_17.0.8.v20230831-1047\jre\lib\security>     keytool -importcert -file "C:\Users\aalchala\Desktop\rallycert.cer" -alias rallyCert -keystore cacerts -storepass changeit
+keytool error: java.io.FileNotFoundException: C:\Users\aalchala\Desktop\rallycert.cer (The system cannot find the file specified)
+
+
+
+
      ```
    - Explanation of the parameters:
      - `-file "C:\Users\aalchala\Desktop\rallycert.cer"`: The path to the certificate file you're importing.
