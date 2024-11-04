@@ -1,3 +1,21 @@
 https://qa.local-sm-services.awsnonprod.healthcareit.net/Edits/cpid/
 https://qa2.connectcenter.awsnonprod.healthcareit.net/account/login.fcc?TYPE=33554433&REALMOID=06-e9a8062d-5e75-4fc5-a18c-d2c0606bdc9e&GUID=&SMAUTHREASON=0&METHOD=GET&SMAGENTNAME=-SM-L8SM4mpPf%2bFEsHuz28DoCrZoyXKUrCDcz4bp8yZbMlq8bKSph%2f1rdCRrZHLtaG49&TARGET=-SM-https%3a%2f%2fqa2%2econnectcenter%2eawsnonprod%2ehealthcareit%2enet%2fportal%2f#/Home
 https://wiki.healthcareit.net/pages/viewpage.action?pageId=1961105067
+Password must have at least 1 letter(s)
+Cannot reuse any of your last 24 passwords.
+Password must have at most 32 character(s)
+Password must have at least 1 lowercase letter(s)
+Password must have at least 8 character(s)
+Password will be checked against your identity attributes.
+Password must have at least 4 character types
+Password must have at least 1 special character(s)
+Password must have at least 1 digit(s)
+Password cannot contain more than 1 instance(s) of repeated characters
+Password must have at least 1 uppercase letter(s)
+Password will be checked for triviality
+Password will be checked against the password dictionary.
+Password will be checked against your account attributes.
+Password cannot contain your display name
+Password cannot contain your account ID
+Allowed special characters ~ ! @ # $ % ^ * _ + - = { } \\ ] [ : ; ? , .
+Not allowed special characters | ( ) ' < > /
