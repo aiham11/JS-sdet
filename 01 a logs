@@ -1,17 +1,46 @@
-https://qa.local-sm-services.awsnonprod.healthcareit.net/Edits/cpid/
-https://qa2.connectcenter.awsnonprod.healthcareit.net/account/login.fcc?TYPE=33554433&REALMOID=06-e9a8062d-5e75-4fc5-a18c-d2c0606bdc9e&GUID=&SMAUTHREASON=0&METHOD=GET&SMAGENTNAME=-SM-L8SM4mpPf%2bFEsHuz28DoCrZoyXKUrCDcz4bp8yZbMlq8bKSph%2f1rdCRrZHLtaG49&TARGET=-SM-https%3a%2f%2fqa2%2econnectcenter%2eawsnonprod%2ehealthcareit%2enet%2fportal%2f#/Home
-https://wiki.healthcareit.net/pages/viewpage.action?pageId=1961105067
+public class Solution {
+    public int firstMissingPositive(int[] A) {
+        int N = A.length;
+        
+        // Step 1: Clean the array, replace irrelevant elements with a placeholder (N+1)
+        for (int i = 0; i < N; i++) {
+            if (A[i] <= 0 || A[i] > N) {
+                A[i] = N + 1; // Placeholder for irrelevant numbers
+            }
+        }
+        
+        // Step 2: Rearrange the array using the values as indices
+        for (int i = 0; i < N; i++) {
+            int val = Math.abs(A[i]);
+            if (val >= 1 && val <= N) {
+                if (A[val - 1] > 0) {
+                    A[val - 1] = -A[val - 1]; // Mark as found (using negative values)
+                }
+            }
+        }
 
+        // Step 3: Find the first missing positive number
+        for (int i = 0; i < N; i++) {
+            if (A[i] > 0) {
+                return i + 1; // The smallest missing positive integer
+            }
+        }
 
-Connect Center - https://qa3.connectcenter.awsnonprod.healthcareit.net
-Front End Edit - https://qa.local-sm-services.awsnonprod.healthcareit.net/Edits/cpid/
-CC Assurance Edit Manager - https://collaborationcompass.changehealthcare.com/ams_em1/org.drools.guvnor.Guvnor/Guvnor.html
-emf URL : https://qa.emf.awsnonprod.healthcareit.net/Support/ClientOptions/BasicCO.html
-Info Exchange Web URL : https://qa.infoexchange.awsnonprod.healthcareit.net/InfoExchange/mailbox.html
+        // Step 4: If all values are found, the missing number is N + 1
+        return N + 1;
+    }
 
-
-
- Kok99!St@ble# meets all specified criteria and should be valid.
-
-
-Hand!Trix90@dilan
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        
+        // Test examples
+        int[] A1 = {1, 3, 6, 4, 1, 2};
+        System.out.println(solution.firstMissingPositive(A1)); // Output: 5
+        
+        int[] A2 = {1, 2, 3};
+        System.out.println(solution.firstMissingPositive(A2)); // Output: 4
+        
+        int[] A3 = {-1, -3};
+        System.out.println(solution.firstMissingPositive(A3)); // Output: 1
+    }
+}
